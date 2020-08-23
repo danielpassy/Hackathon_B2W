@@ -2,14 +2,17 @@ from django.shortcuts import render
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
+
 from django.http import JsonResponse
 from django.shortcuts import HttpResponse, HttpResponseRedirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
-from .models import Chat, Transaction, Product, ProductImage, Category, User
-
+from .models import *
+from .serializers import *
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework import status
 
 def login_view(request):
     if request.method == "POST":
@@ -44,19 +47,28 @@ def createProduct(request):
         return JsonResponse({"error": "POST request required."}, status=400)
 
 
+
+
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
 def retrieveProducts(request):
-    user = User.objects.get(id=request.user.id)
+    data = json.loads(request.body, encoding='utf-8')
+    user = User.objects.get(id=data['user'])
     products = Product.objects.filter(
         user=user
     )
-    products = products.order_by("-timestamp").all()
-    return JsonResponse([product.serialize() for product in products], safe=False, status=201)
+    serializer = ProductSerializer(products, context={'request': request}, many=True)
+    return Response(serializer.data)
 
-def retrieveOneProduct(request, product_id):
+@api_view(['GET'])
+@csrf_exempt
+def retrieveOneProduct(request, id):
     product = Product.objects.filter(
-        id=product_id
+        id=id
     )
-    return JsonResponse(product.serialize(), safe=False)
+    serializer = ProductSerializer(product, context={'request': request}, many=True)
+    return Response(serializer.data)
 
 @csrf_exempt
 def createComment(request):
@@ -65,7 +77,8 @@ def createComment(request):
 
 
 def retrieveComments(request):
-    buyer = User.objects.get(id=request.user)
+    data = request.body
+    buyer = User.objects.get(id=data['user'])
     comments = Chat.objects.filter(
         receiver=request.user, sender=buyer
     )

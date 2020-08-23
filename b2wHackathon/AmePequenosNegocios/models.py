@@ -23,6 +23,18 @@ class Product(models.Model):
     active = models.BooleanField(default=True)
     image = models.FileField(upload_to='uploads/')
 
+    def serialize(self):
+        print("hi")
+        return {
+            "user": self.user.email,
+            "price": self.price,
+            "cashback": self.price,
+            "description": self.description,
+            "active": self.active,
+            "timestamp": self.timestamp.strftime("%b %#d %Y, %#I:%M %p"),
+            "image": self.image.read()
+        }
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="images")

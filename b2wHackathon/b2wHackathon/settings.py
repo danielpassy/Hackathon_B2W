@@ -25,13 +25,17 @@ SECRET_KEY = '#doq==9zyn3itpk&f(+4$0#1#k0i!k-e%$0cruzh0u95(nijp@'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'kubernetes.docker.internal',
+    '127.0.0.1'
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
     'AmePequenosNegocios',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
