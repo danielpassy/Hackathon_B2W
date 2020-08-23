@@ -1,19 +1,22 @@
-from django.shortcuts import render
 import json
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-
 from django.http import JsonResponse
 from django.shortcuts import HttpResponse, HttpResponseRedirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 # Create your views here.
 from .models import *
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
+import operator
 
+
+@api_view(['POST'])
+@csrf_exempt
 def login_view(request):
     if request.method == "POST":
 
@@ -34,32 +37,42 @@ def login_view(request):
         return render(request, "AmePequenosNegocios/login.html")
 
 
-@login_required()
 def index(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST request required."}, status=400)
     return HttpResponse("hi")
 
 
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 @csrf_exempt
 def createProduct(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST request required."}, status=400)
+    serializer = ProductSerializer(data=request.data)
+    if serializer.is_valid():
+        saved_product = serializer.save()
+        serializer_category = CategorySerializer(data=request.data)
+        if serializer_category.is_valid():
+            serializer_category.validated_data['products'] = saved_product
+            saved_category = serializer_category.save()
+        else:
+            print("deu ruim fodaci")
+            # product = Product.objects.get(id=saved_product.id)
+            # DB_entry = Category.objects.create(name=category, products=product)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 @csrf_exempt
-def retrieveProducts(request):
-    data = json.loads(request.body, encoding='utf-8')
-    user = User.objects.get(id=data['user'])
+def retrieveUserProducts(request, id):
+    try:
+        user = User.objects.get(id=id)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     products = Product.objects.filter(
         user=user
     )
-    serializer = ProductSerializer(products, context={'request': request}, many=True)
+    serializer = ProductSerializer(products, many=True)
     return Response(serializer.data)
+
 
 @api_view(['GET'])
 @csrf_exempt
@@ -70,64 +83,60 @@ def retrieveOneProduct(request, id):
     serializer = ProductSerializer(product, context={'request': request}, many=True)
     return Response(serializer.data)
 
+
+@api_view(['POST'])
 @csrf_exempt
 def createComment(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST request required."}, status=400)
+    serializer = ChatSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@parser_classes([MultiPartParser, FormParser])
+@api_view(['POST'])
 def retrieveComments(request):
-    data = request.body
-    buyer = User.objects.get(id=data['user'])
-    comments = Chat.objects.filter(
-        receiver=request.user, sender=buyer
-    )
-    comments = comments.order_by("-timestamp").all()
-    return JsonResponse([comment.serialize() for comment in comments], safe=False)
+    serializer = TransactionsSerializer(data=request.data)
+    if serializer.is_valid():
+        saved_transaction = serializer.save()
+        # TODO: GET THE RIGHT ID
+        product = Product.objects.get(id=saved_transaction)
+        product.active = False
+        product.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+@api_view(['POST'])
 @csrf_exempt
 def createTransaction(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST request required."}, status=400)
-
     data = json.loads(request.body)
-
-    seller = request.user
-    buyer_id = data['buyer']
-    product_id = data['product']
-    product = Product.object.get(id=product_id)
-    price = product.price
-    cashback = product.cashback
-
-    ## get the buyer id from the API request.
+    serializer = TransactionsSerializer(data=data)
     try:
-        buyer = User.object.get(id=buyer_id)
+        product_id = data['product']
+        owner = data['seller']
+    except:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    product = Product.objects.get(id=product_id)
+    if (product.active == True and product.user.id == owner):
+        if serializer.is_valid():
+            serializer.save()
+            product.active = False
+            product.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response("The seller it's not the owner of the productq", status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['GET'])
+@csrf_exempt
+def retrieveTransactions(request, id):
+    try:
+        seller = User.objects.get(id=id)
     except User.DoesNotExist:
-        return JsonResponse({
-            "error": f"User with id {buyer} does not exist."
-        }, status=400)
-
-    # create the transaction in the db and update the status of the product
-    transaction = Transaction(
-        product=product,
-        seller=seller,
-        buyer=buyer,
-        price=price,
-        cashback=cashback
-    )
-    transaction.save()
-
-    product = product(active=False)
-    product.save()
-
-    return JsonResponse({"message": "A transação foi concluída com sucesso"}, status=201)
-
-
-def retrieveTransactions(request):
-    buyer = User.objects.get(id=request.user)
+        return Response(status=status.HTTP_404_NOT_FOUND)
     transactions = Transaction.objects.filter(
-        receiver=request.user, sender=buyer
+        Q(seller=seller) | Q(buyer=seller)
     )
     transactions = transactions.order_by("-timestamp").all()
-    return JsonResponse([transaction.serialize() for transaction in transactions], safe=False, status=201)
+    serializer = TransactionsSerializer(transactions, many=True)
+    return Response(serializer.data)
