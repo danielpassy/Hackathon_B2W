@@ -37,8 +37,8 @@ class Category(models.Model):
 
 
 class Chat(models.Model):
-    seller = models.ForeignKey('User', on_delete=models.CASCADE, related_name='msgSend')
     buyer = models.ForeignKey('User', on_delete=models.CASCADE, related_name='msgReceive')
+    seller = models.ForeignKey('User', on_delete=models.CASCADE, related_name='msgSend')
     content = models.CharField(max_length=MESSAGE_MAX_LENGHT)
     timestamp = models.DateTimeField(auto_now_add=True)
 

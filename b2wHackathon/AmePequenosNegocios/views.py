@@ -97,20 +97,27 @@ def createComment(request):
 @parser_classes([MultiPartParser, FormParser])
 @api_view(['POST'])
 def retrieveComments(request):
-    serializer = TransactionsSerializer(data=request.data)
-    if serializer.is_valid():
-        saved_transaction = serializer.save()
-        # TODO: GET THE RIGHT ID
-        product = Product.objects.get(id=saved_transaction)
-        product.active = False
-        product.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        data = json.loads(request.body)
+        seller = data['seller']
+        buyer = data['buyer']
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    chat = Chat.objects.filter(
+        seller=seller, buyer=buyer
+    )
+    chat = chat.order_by("-timestamp").all()
+    serializer = ChatSerializer(chat, many=True)
+    return Response(serializer.data)
+
 
 @api_view(['POST'])
 @csrf_exempt
 def createTransaction(request):
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     serializer = TransactionsSerializer(data=data)
     try:
         product_id = data['product']
