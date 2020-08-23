@@ -26,5 +26,8 @@ Faça as migrações
 
     python manage.py migrate
     
+Inicialize em servidor local para testes
+
+    python manage.py runserver
  
     
