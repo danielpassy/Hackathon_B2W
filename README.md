@@ -5,7 +5,10 @@ Ame Pequenas Empresas é uma plataforma para pequeno e micro empreendedores se c
 
 Construído com Django como backEnd e React como Front
 
+
 # SETUP
+
+Necessário Python3 e PIP
 
 clone este projeto
 
