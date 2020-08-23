@@ -17,6 +17,7 @@ class ChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = "__all__"
+        read_only_fields = ("timestamp", )
 
 class ProductSerializer(serializers.ModelSerializer):
     categorias = serializers.SlugRelatedField(

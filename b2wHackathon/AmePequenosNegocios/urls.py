@@ -16,7 +16,7 @@ urlpatterns = [
     path("comments", views.createComment, name="createComment"),
     path("comments/user", views.retrieveComments, name="retrieveComments"),
     path("transaction", views.createTransaction, name="createTransaction"),
-    path("transaction/list/<str:id>", views.retrieveTransactions, name="retrieveTransactions")
+    path("transaction/list", views.retrieveTransactions, name="retrieveTransactions")
 ]
 
 

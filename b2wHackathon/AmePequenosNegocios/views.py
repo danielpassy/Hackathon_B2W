@@ -52,10 +52,6 @@ def createProduct(request):
         if serializer_category.is_valid():
             serializer_category.validated_data['products'] = saved_product
             saved_category = serializer_category.save()
-        else:
-            print("deu ruim fodaci")
-            # product = Product.objects.get(id=saved_product.id)
-            # DB_entry = Category.objects.create(name=category, products=product)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -79,9 +75,12 @@ def retrieveUserProducts(request, id):
 @csrf_exempt
 @permission_classes([IsAuthenticated])
 def retrieveOneProduct(request, id):
-    product = Product.objects.filter(
-        id=id
-    )
+    try:
+        product = Product.objects.filter(
+            id=id
+        )
+    except Product.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     serializer = ProductSerializer(product, context={'request': request}, many=True)
     return Response(serializer.data)
 
@@ -90,6 +89,7 @@ def retrieveOneProduct(request, id):
 @csrf_exempt
 @permission_classes([IsAuthenticated])
 def createComment(request):
+    request.data['seller'] = request.user.id
     serializer = ChatSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -101,9 +101,9 @@ def createComment(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def retrieveComments(request):
+    seller = request.user.id
     try:
         data = json.loads(request.body)
-        seller = data['seller']
         buyer = data['buyer']
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -123,30 +123,32 @@ def createTransaction(request):
         data = json.loads(request.body)
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    product = Product.objects.get(id=data['product'])
+
+    request.data['price'] = product.price
+    request.data['cashback'] = product.cashback
+    request.data['seller'] = product.user
+    data['buyer'] = request.user.id
+
+
+    if (product.active == False):
+        return Response("Product Unavailable", status=status.HTTP_400_BAD_REQUEST)
+
     serializer = TransactionsSerializer(data=data)
-    try:
-        product_id = data['product']
-        owner = data['seller']
-    except:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    product = Product.objects.get(id=product_id)
-    if (product.active == True and product.user.id == owner):
-        if serializer.is_valid():
-            serializer.save()
-            product.active = False
-            product.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    return Response("The seller it's not the owner of the productq", status=status.HTTP_401_UNAUTHORIZED)
+    if serializer.is_valid():
+        serializer.save()
+        product.active = False
+        product.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @csrf_exempt
 @permission_classes([IsAuthenticated])
-def retrieveTransactions(request, id):
-    try:
-        seller = User.objects.get(id=id)
-    except User.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+def retrieveTransactions(request):
+    user_id = request.user.id
+    seller = User.objects.get(id=user_id)
     transactions = Transaction.objects.filter(
         Q(seller=seller) | Q(buyer=seller)
     )
