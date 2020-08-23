@@ -1,21 +1,20 @@
 import json
-from django.http import JsonResponse
 from django.shortcuts import HttpResponse, HttpResponseRedirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
-# Create your views here.
+
 from .models import *
 from .serializers import *
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import parser_classes
+from rest_framework.decorators import parser_classes, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 import operator
 
 
-@api_view(['POST'])
+@api_view(['POST', 'GET'])
 @csrf_exempt
 def login_view(request):
     if request.method == "POST":
@@ -44,6 +43,7 @@ def index(request):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def createProduct(request):
     serializer = ProductSerializer(data=request.data)
     if serializer.is_valid():
@@ -62,6 +62,7 @@ def createProduct(request):
 
 @api_view(['GET'])
 @csrf_exempt
+@permission_classes([AllowAny])
 def retrieveUserProducts(request, id):
     try:
         user = User.objects.get(id=id)
@@ -76,6 +77,7 @@ def retrieveUserProducts(request, id):
 
 @api_view(['GET'])
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def retrieveOneProduct(request, id):
     product = Product.objects.filter(
         id=id
@@ -86,6 +88,7 @@ def retrieveOneProduct(request, id):
 
 @api_view(['POST'])
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def createComment(request):
     serializer = ChatSerializer(data=request.data)
     if serializer.is_valid():
@@ -96,6 +99,7 @@ def createComment(request):
 
 @parser_classes([MultiPartParser, FormParser])
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def retrieveComments(request):
     try:
         data = json.loads(request.body)
@@ -113,6 +117,7 @@ def retrieveComments(request):
 
 @api_view(['POST'])
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def createTransaction(request):
     try:
         data = json.loads(request.body)
@@ -136,6 +141,7 @@ def createTransaction(request):
 
 @api_view(['GET'])
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def retrieveTransactions(request, id):
     try:
         seller = User.objects.get(id=id)

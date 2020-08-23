@@ -32,10 +32,14 @@ ALLOWED_HOSTS = [
 
 
 # Application definition
-
 INSTALLED_APPS = [
-    'AmePequenosNegocios',
+    # REST
+    'rest_framework.authtoken',
     'rest_framework',
+
+    # LOCAL APP
+    'AmePequenosNegocios',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -86,6 +91,7 @@ DATABASES = {
 }
 
 
+
 AUTH_USER_MODEL = 'AmePequenosNegocios.User'
 
 # Password validation
@@ -125,6 +131,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 STATIC_URL = '/static/'
 
-
 MEDIA_ROOT = os.path.join(BASE_DIR, '')
 MEDIA_URL = '/uploads/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # <-- And here
+    ],
+}
