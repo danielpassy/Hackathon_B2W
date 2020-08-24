@@ -1,6 +1,3 @@
-<h1 align ="center" display= 'flex'>
-    <img src="src/assets/app.png" alt="Imagem do Site" title="#Ame - Pequenos Negócios"></img>
-</h1>
 
 ## Ame - Pequenos Negócios 🚀 em construção... 🚧
 
