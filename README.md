@@ -43,5 +43,5 @@ $ python manage.py migrate
 $ python manage.py runserver
 
 # Gere um token de autenticação para realizar testes, 
-curl -d "username=daniel&password=daniel" -X POST http://127.0.0.1:8000/api-token-auth
+curl -d "username=teste&password=teste" -X POST http://127.0.0.1:8000/api-token-auth
 ```
