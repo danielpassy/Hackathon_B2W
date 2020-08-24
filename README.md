@@ -1,3 +1,6 @@
+<h1 align ="center" display= 'flex'>
+    <img src="assets/app.png" alt="Imagem do Site" title="#Ame - Pequenos Negócios"></img>
+</h1>
 
 ## Ame - Pequenos Negócios 🚀 em construção... 🚧
 
@@ -13,7 +16,7 @@ simples e amigável.
 - React Native
 - Expo
 - Typescript
-- Django Rest
+- Django REST
 
 ## 🎨 Layout
 - [Figma](https://www.figma.com/file/kxMeQl6AXbNQHNw55Oz1L1/Ame---pequenos-neg%C3%B3cios?node-id=0%3A1)
